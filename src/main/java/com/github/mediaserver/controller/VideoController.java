@@ -1,5 +1,9 @@
 package com.github.mediaserver.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.mediaserver.dto.ConnectionPropertiesDto;
+import com.github.mediaserver.dto.PostConnectionDto;
 import io.openvidu.java.client.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -7,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -20,7 +25,7 @@ public class VideoController {
 
     @PostConstruct
     public void init() {
-        this.openVidu = new OpenVidu("https://localhost:4443", openviduSecret);
+        this.openVidu = new OpenVidu("https://openvidu:4443", openviduSecret);
     }
 
 
@@ -41,16 +46,26 @@ public class VideoController {
      * @param params    The Connection properties
      * @return The Token associated to the Connection
      */
-    @PostMapping("/api/sessions/{sessionId}/connections")
+    @PostMapping("/api/{sessionId}/connections")
     public ResponseEntity<String> createConnection(
             @PathVariable("sessionId") String sessionId,
-            @RequestBody(required = false) Map<String, Object> params)
-            throws OpenViduJavaClientException, OpenViduHttpException {
+            @RequestBody(required = false) ConnectionPropertiesDto params)
+            throws OpenViduJavaClientException, OpenViduHttpException, JsonProcessingException {
         Session session = openVidu.getActiveSession(sessionId);
         if (session == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        ConnectionProperties properties = ConnectionProperties.fromJson(params).build();
+
+        String role = params.getRole();
+        String type = params.getType();
+        Boolean onlyPlayWithSubscribers = params.getOnlyPlayWithSubscribers();
+
+        Map<String, Object> paramsMap = new HashMap<>();
+        paramsMap.put("role", role);
+        paramsMap.put("type", type);
+        paramsMap.put("onlyPlayWithSubscribers", onlyPlayWithSubscribers);
+
+        ConnectionProperties properties = ConnectionProperties.fromJson(paramsMap).build();
         Connection connection = session.createConnection(properties);
         return new ResponseEntity<>(connection.getToken(), HttpStatus.OK);
     }
