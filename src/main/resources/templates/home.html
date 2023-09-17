@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OpenVidu Client Example</title>
+    <script src="https://cdn.jsdelivr.net/npm/openvidu-browser@2.28.0/static/js/openvidu-browser-2.28.0.min.js"></script>
+</head>
+<body>
+
+<button id="start">Start Video Session</button>
+<div id="videoContainer"></div>
+
+<script>
+    const OV = new OpenVidu();
+    let session;
+    let publisher;
+
+    document.getElementById("start").addEventListener("click", async function() {
+        try {
+            // Fetch session ID from your server
+            const sessionId = await fetch('http://localhost:8080/api/sessions', {
+                method: 'POST'
+            }).then(res => res.json());
+
+
+            // Fetch connection token from your server
+            const token = await fetch(`http://localhost:8080/api/sessions/${sessionId}/connections`, {
+                method: 'POST'
+            }).then(res => res.json());
+
+            session = OV.initSession();
+
+            session.on("streamCreated", function(event) {
+                session.subscribe(event.stream, 'videoContainer');
+            });
+
+            session.connect(token)
+                .then(() => {
+                    publisher = OV.initPublisher('videoContainer');
+                    session.publish(publisher);
+                })
+                .catch(error => {
+                    console.log("Error connecting to the session:", error);
+                });
+
+        } catch (error) {
+            console.error("Error: ", error);
+        }
+    });
+</script>
+
+</body>
+</html>

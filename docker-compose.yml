@@ -1,0 +1,23 @@
+version: "3.7"
+
+services:
+  openvidu:
+    image: openvidu/openvidu-server-kms:2.22.0
+    ports:
+      - "4443:4443"
+    env_file:
+      - .env
+
+  commerce:
+    image: zin354/commerce-media:latest
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - openvidu
+    env_file:
+      - .env
+
+
+
+
